@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import Header from '../components/Header'
@@ -32,25 +32,34 @@ export default function EditarReservaPage() {
   const reserva = location.state?.reserva
   if (!reserva) { navigate('/home'); return null }
 
-  const [qtd, setQtd] = useState(reserva.qtdLugares || null)
+  const [qtd, setQtd] = useState(reserva.qtd_lugares || reserva.qtdLugares || null)
   const [data, setData] = useState(reserva.data || '')
   const [horario, setHorario] = useState(reserva.horario || null)
-  const [mesaSelecionada, setMesaSelecionada] = useState(reserva.mesaIdx)
+  const [mesaSelecionada, setMesaSelecionada] = useState(reserva.mesa_idx ?? reserva.mesaIdx ?? null)
+  const [mesasOcupadas, setMesasOcupadas] = useState([])
   const [alerta, setAlerta] = useState('')
   const [showConfirm, setShowConfirm] = useState(false)
 
   const { min, max } = getDateRange()
 
-  // Mesas ocupadas no novo horário/data, mas exclui a mesa atual do próprio usuário
-  const mesasOcupadas = (data && horario)
-    ? getMesasOcupadas(data, horario).filter(idx => !(idx === reserva.mesaIdx && horario === reserva.horario && data === reserva.data))
-    : []
+  const mesaAtualIdx = reserva.mesa_idx ?? reserva.mesaIdx ?? null
+
+  // Busca mesas ocupadas sempre que data ou horário mudarem
+  useEffect(() => {
+    if (data && horario) {
+      getMesasOcupadas(data, horario).then(result => {
+        // Exclui a mesa atual do próprio usuário
+        const filtradas = result.filter(idx =>
+          !(idx === mesaAtualIdx && horario === reserva.horario && data === reserva.data)
+        )
+        setMesasOcupadas(filtradas)
+      })
+    } else {
+      setMesasOcupadas([])
+    }
+  }, [data, horario])
 
   function handleSelectMesa(idx) {
-    if (!qtd || !data || !horario) {
-      setAlerta('Preencha todos os filtros antes de escolher uma mesa!')
-      return
-    }
     setMesaSelecionada(idx)
   }
 
@@ -62,8 +71,8 @@ export default function EditarReservaPage() {
     setShowConfirm(true)
   }
 
-  function confirmar() {
-    editarReserva(reserva.id, {
+  async function confirmar() {
+    await editarReserva(reserva.id, {
       data,
       horario,
       mesa: mesaSelecionada + 1,
@@ -123,7 +132,7 @@ export default function EditarReservaPage() {
             mesaSelecionada={mesaSelecionada}
             onSelect={handleSelectMesa}
             qtdLugares={qtd}
-            mesaAtualEdit={reserva.mesaIdx}
+            mesaAtualEdit={mesaAtualIdx}
           />
         </div>
 
