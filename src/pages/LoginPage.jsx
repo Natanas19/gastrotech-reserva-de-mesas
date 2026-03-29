@@ -10,6 +10,7 @@ export default function LoginPage() {
   const { login } = useApp()
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
+  const [mostrarSenha, setMostrarSenha] = useState(false)
   const [alerta, setAlerta] = useState('')
 
   async function handleEntrar() {
@@ -42,6 +43,8 @@ export default function LoginPage() {
 
         <div className="card">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+            {/* Email */}
             <div className="input-group">
               <input
                 className="input-field"
@@ -52,15 +55,39 @@ export default function LoginPage() {
                 onKeyDown={handleKeyDown}
               />
             </div>
+
+            {/* Senha com olho */}
             <div className="input-group">
-              <input
-                className="input-field"
-                type="password"
-                placeholder="Senha"
-                value={senha}
-                onChange={e => setSenha(e.target.value)}
-                onKeyDown={handleKeyDown}
-              />
+              <div style={{ position: 'relative', width: '100%' }}>
+                <input
+                  className="input-field"
+                  type={mostrarSenha ? 'text' : 'password'}
+                  placeholder="Senha"
+                  value={senha}
+                  onChange={e => setSenha(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  style={{ paddingRight: 44 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarSenha(m => !m)}
+                  style={{
+                    position: 'absolute',
+                    right: 12,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'rgba(254,254,253,0.6)',
+                    fontSize: 18,
+                    padding: 0,
+                    lineHeight: 1,
+                  }}
+                >
+                  {mostrarSenha ? '🙈' : '👁'}
+                </button>
+              </div>
             </div>
 
             <button className="btn btn-green" style={{ marginTop: 8 }} onClick={handleEntrar}>
