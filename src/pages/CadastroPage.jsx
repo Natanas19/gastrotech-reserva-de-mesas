@@ -13,7 +13,7 @@ function validarEmail(email) {
 function validarCPF(cpf) {
   cpf = cpf.replace(/\D/g, '')
   if (cpf.length !== 11) return false
-  if (/^(\d)\1+$/.test(cpf)) return false // sequências como 00000000000
+  if (/^(\d)\1+$/.test(cpf)) return false
 
   let soma = 0
   for (let i = 0; i < 9; i++) soma += parseInt(cpf[i]) * (10 - i)
@@ -52,6 +52,24 @@ function formatarTelefone(v) {
   return v.replace(/\D/g, '').slice(0, 15)
 }
 
+// ---- Ícones SVG de olho ----
+function IconeOlho({ aberto }) {
+  return aberto ? (
+    // Olho aberto
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+  ) : (
+    // Olho com risco
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+      <line x1="1" y1="1" x2="23" y2="23"/>
+    </svg>
+  )
+}
+
 // ---- Componente de input com olho ----
 function InputSenha({ placeholder, value, onChange, hint }) {
   const [mostrar, setMostrar] = useState(false)
@@ -78,12 +96,13 @@ function InputSenha({ placeholder, value, onChange, hint }) {
             border: 'none',
             cursor: 'pointer',
             color: 'rgba(254,254,253,0.6)',
-            fontSize: 18,
             padding: 0,
             lineHeight: 1,
+            display: 'flex',
+            alignItems: 'center',
           }}
         >
-          {mostrar ? '🙈' : '👁'}
+          <IconeOlho aberto={mostrar} />
         </button>
       </div>
       {hint && <span className="input-hint">{hint}</span>}
@@ -166,7 +185,6 @@ export default function CadastroPage() {
         <div className="card" style={{ maxWidth: 420 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-            {/* Nome */}
             <div className="input-group">
               <input
                 className="input-field"
@@ -178,7 +196,6 @@ export default function CadastroPage() {
               <span className="input-hint">Máximo 50 caracteres ({form.nome.length}/50)</span>
             </div>
 
-            {/* CPF */}
             <div className="input-group">
               <input
                 className="input-field"
@@ -190,7 +207,6 @@ export default function CadastroPage() {
               <span className="input-hint">Somente números, 11 dígitos</span>
             </div>
 
-            {/* Telefone */}
             <div className="input-group">
               <input
                 className="input-field"
@@ -202,7 +218,6 @@ export default function CadastroPage() {
               <span className="input-hint">Somente números, com DDD</span>
             </div>
 
-            {/* Email */}
             <div className="input-group">
               <input
                 className="input-field"
@@ -214,15 +229,13 @@ export default function CadastroPage() {
               <span className="input-hint">Formato válido de e-mail</span>
             </div>
 
-            {/* Senha */}
             <InputSenha
               placeholder="Senha"
               value={form.senha}
               onChange={e => handleChange('senha', e.target.value)}
-              hint="Mín. 8 caracteres, letra maiúscula, minúscula, número e caractere especial"
+              hint="Mín. 8 caracteres, maiúscula, minúscula, número e caractere especial"
             />
 
-            {/* Confirmar Senha */}
             <InputSenha
               placeholder="Confirmar Senha"
               value={form.confirmarSenha}
