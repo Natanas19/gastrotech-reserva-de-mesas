@@ -96,7 +96,7 @@ body {
   border: none;
   cursor: pointer;
   color: var(--branco);
-  font-size: 42px;
+  font-size: 32px;
   padding: 6px;
   display: flex;
   align-items: center;
