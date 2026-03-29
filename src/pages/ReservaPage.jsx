@@ -38,7 +38,6 @@ export default function ReservaPage() {
 
   const { min, max } = getDateRange()
 
-  // Busca mesas ocupadas sempre que data ou horário mudarem
   useEffect(() => {
     if (data && horario) {
       getMesasOcupadas(data, horario).then(setMesasOcupadas)
@@ -48,16 +47,24 @@ export default function ReservaPage() {
   }, [data, horario])
 
   function handleSelectMesa(idx) {
-    if (!qtd || !data || !horario) {
-      setAlerta('Preencha todos os filtros antes de escolher uma mesa!')
-      return
-    }
     setMesaSelecionada(idx)
   }
 
   function handleConfirmar() {
-    if (!qtd || !data || !horario) {
-      setAlerta('Preencha todos os filtros!')
+    if (!qtd && !data && !horario && mesaSelecionada === null) {
+      setAlerta('Preencha todos os filtros e selecione uma mesa!')
+      return
+    }
+    if (!qtd) {
+      setAlerta('Selecione a quantidade de lugares!')
+      return
+    }
+    if (!data) {
+      setAlerta('Selecione uma data!')
+      return
+    }
+    if (!horario) {
+      setAlerta('Selecione um horário!')
       return
     }
     if (mesaSelecionada === null) {
@@ -144,17 +151,15 @@ export default function ReservaPage() {
           {mesaSelecionada !== null && <span style={{ color: 'var(--dourado)' }}>✓ Mesa {mesaSelecionada + 1} selecionada</span>}
         </div>
 
-        {/* Botões */}
+        {/* Botões — sempre visíveis */}
         <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginTop: 8 }}>
           <button className="btn btn-ghost" onClick={() => navigate('/home')}>
             ← Voltar
           </button>
 
-          {mesaSelecionada !== null && (
-            <button className="btn btn-green" onClick={handleConfirmar}>
-              Confirmar Reserva
-            </button>
-          )}
+          <button className="btn btn-green" onClick={handleConfirmar}>
+            Confirmar Reserva
+          </button>
         </div>
       </div>
 
