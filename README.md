@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🍽 GastroTech
 
 Sistema de reserva de mesas para restaurante — **React + Vite + LocalStorage**
@@ -133,3 +134,7 @@ Atualmente usa **LocalStorage**. Para migrar ao banco:
 - [ ] Tela de recuperação de senha
 - [ ] Zoom e tela cheia no mapa de mesas
 - [ ] Deploy no GitHub Pages ou Vercel
+=======
+# gastrotech-reserva-de-mesas
+Sistema web de reserva de mesas para restaurantes desenvolvido com React e Vite. Permite que clientes realizem reservas online escolhendo data, horário e quantidade de lugares, eliminando filas e otimizando o controle do estabelecimento. Conta com autenticação, painel administrativo, geração de QR Code e mapa interativo de mesas.
+>>>>>>> fde79b03d6310865855be78d8072b15603d98c16
