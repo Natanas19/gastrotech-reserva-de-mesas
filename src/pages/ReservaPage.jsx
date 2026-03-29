@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import Header from '../components/Header'
@@ -32,12 +32,20 @@ export default function ReservaPage() {
   const [data, setData] = useState('')
   const [horario, setHorario] = useState(null)
   const [mesaSelecionada, setMesaSelecionada] = useState(null)
+  const [mesasOcupadas, setMesasOcupadas] = useState([])
   const [alerta, setAlerta] = useState('')
   const [showConfirm, setShowConfirm] = useState(false)
 
   const { min, max } = getDateRange()
 
-  const mesasOcupadas = (data && horario) ? getMesasOcupadas(data, horario) : []
+  // Busca mesas ocupadas sempre que data ou horário mudarem
+  useEffect(() => {
+    if (data && horario) {
+      getMesasOcupadas(data, horario).then(setMesasOcupadas)
+    } else {
+      setMesasOcupadas([])
+    }
+  }, [data, horario])
 
   function handleSelectMesa(idx) {
     if (!qtd || !data || !horario) {
@@ -59,13 +67,18 @@ export default function ReservaPage() {
     setShowConfirm(true)
   }
 
-  function confirmarReserva() {
-    const nova = criarReserva({
+  async function confirmarReserva() {
+    const nova = await criarReserva({
       mesaIdx: mesaSelecionada,
       horario,
       data,
       qtdLugares: qtd,
     })
+    if (!nova) {
+      setAlerta('Erro ao criar reserva. Tente novamente!')
+      setShowConfirm(false)
+      return
+    }
     navigate('/confirmacao', { state: { reserva: nova } })
   }
 
