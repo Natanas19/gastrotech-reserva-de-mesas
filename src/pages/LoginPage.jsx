@@ -12,13 +12,13 @@ export default function LoginPage() {
   const [senha, setSenha] = useState('')
   const [alerta, setAlerta] = useState('')
 
-  function handleEntrar() {
+  async function handleEntrar() {
     if (!email.trim() || !senha.trim()) {
       setAlerta('Preencha todos os campos!')
       return
     }
 
-    const result = login(email.trim(), senha.trim())
+    const result = await login(email.trim(), senha.trim())
 
     if (result === 'admin') {
       navigate('/admin')
