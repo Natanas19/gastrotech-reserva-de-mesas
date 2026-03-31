@@ -10,7 +10,7 @@ export function AlertToast({ message, onClose }) {
   return (
     <div className="modal-overlay" onClick={onClose} style={{ alignItems: 'flex-start', paddingTop: 80 }}>
       <div className="alert-toast" onClick={e => e.stopPropagation()}>
-        <div className="alert-icon">
+        <div className="alert-icon" style={{ display: 'flex', justifyContent: 'center' }}>
           <img src="/logo-vermelho.png" alt="aviso" style={{ width: 36, height: 36, objectFit: 'contain' }} />
         </div>
         <p>{message}</p>
@@ -24,7 +24,7 @@ export function ConfirmModal({ message, onConfirm, onCancel, confirmLabel = 'Sim
   return (
     <div className="modal-overlay" onClick={onCancel}>
       <div className="modal-box" onClick={e => e.stopPropagation()}>
-        <div className="modal-logo">
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
           <img src="/logo.png" alt="logo" style={{ width: 36, height: 36, objectFit: 'contain' }} />
         </div>
         <p className="modal-text">{message}</p>
@@ -50,7 +50,7 @@ export function InfoModal({ data, onClose }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box" onClick={e => e.stopPropagation()}>
-        <div className="modal-logo">
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
           <img src="/logo.png" alt="logo" style={{ width: 36, height: 36, objectFit: 'contain' }} />
         </div>
         <p className="modal-title">Detalhes da Reserva</p>
