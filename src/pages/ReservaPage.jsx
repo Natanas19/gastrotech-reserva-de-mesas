@@ -14,15 +14,26 @@ const QTD_OPTIONS = [
   { value: 16, label: '16 lugares' },
 ]
 
-function getDateRange() {
-  const today = new Date()
-  const max = new Date()
-  max.setDate(today.getDate() + 30)
-  return {
-    min: today.toISOString().split('T')[0],
-    max: max.toISOString().split('T')[0],
+// Gera lista de datas dos próximos 30 dias
+function gerarOpcoesDatas() {
+  const opcoes = []
+  const hoje = new Date()
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(hoje)
+    d.setDate(hoje.getDate() + i)
+    const valor = d.toISOString().split('T')[0] // YYYY-MM-DD
+    const label = d.toLocaleDateString('pt-BR', {
+      weekday: 'short',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    })
+    opcoes.push({ value: valor, label: i === 0 ? `Hoje — ${label}` : label })
   }
+  return opcoes
 }
+
+const DATA_OPTIONS = gerarOpcoesDatas()
 
 export default function ReservaPage() {
   const navigate = useNavigate()
@@ -35,8 +46,6 @@ export default function ReservaPage() {
   const [mesasOcupadas, setMesasOcupadas] = useState([])
   const [alerta, setAlerta] = useState('')
   const [showConfirm, setShowConfirm] = useState(false)
-
-  const { min, max } = getDateRange()
 
   useEffect(() => {
     if (data && horario) {
@@ -111,14 +120,12 @@ export default function ReservaPage() {
 
           <div style={{ flex: 1, minWidth: 140 }}>
             <div className="section-label">Data</div>
-            <input
-              type="date"
-              className="input-field"
-              style={{ padding: '11px 14px' }}
+            <Dropdown
+              label="Data"
+              options={DATA_OPTIONS}
               value={data}
-              min={min}
-              max={max}
-              onChange={e => { setData(e.target.value); setMesaSelecionada(null) }}
+              onChange={v => { setData(v); setMesaSelecionada(null) }}
+              placeholder="Selecione"
             />
           </div>
 
@@ -151,12 +158,11 @@ export default function ReservaPage() {
           {mesaSelecionada !== null && <span style={{ color: 'var(--dourado)' }}>✓ Mesa {mesaSelecionada + 1} selecionada</span>}
         </div>
 
-        {/* Botões — sempre visíveis */}
+        {/* Botões */}
         <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginTop: 8 }}>
           <button className="btn btn-ghost" onClick={() => navigate('/home')}>
             ← Voltar
           </button>
-
           <button className="btn btn-green" onClick={handleConfirmar}>
             Confirmar Reserva
           </button>
