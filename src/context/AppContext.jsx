@@ -67,7 +67,7 @@ export function AppProvider({ children }) {
   }
 
   async function cadastrar(dados) {
-    // Checar CPF duplicado — maybeSingle() retorna null se não encontrar, sem erro
+    // Checar CPF duplicado
     const { data: cpfExiste } = await supabase
       .from('perfis')
       .select('id')
@@ -86,16 +86,16 @@ export function AppProvider({ children }) {
       return null
     }
 
-    // Salvar perfil na tabela perfis
+    // upsert evita erro 409 caso o perfil já exista por tentativa anterior
     const { error: perfilError } = await supabase
       .from('perfis')
-      .insert([{
+      .upsert([{
         id: data.user.id,
         nome: dados.nome,
         cpf: dados.cpf,
         telefone: dados.telefone,
         email: dados.email.toLowerCase().trim(),
-      }])
+      }], { onConflict: 'id' })
 
     if (perfilError) {
       console.log('erro perfil:', perfilError)
