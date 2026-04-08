@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import Header from '../components/Header'
@@ -37,6 +37,35 @@ export default function NovaSenhaPage() {
   const [mostrar2, setMostrar2] = useState(false)
   const [alerta, setAlerta] = useState('')
   const [sucesso, setSucesso] = useState(false)
+  const [pronto, setPronto] = useState(false)
+
+  // Processa o token do link de recuperação
+  useEffect(() => {
+    // O Supabase envia o token como hash na URL: #access_token=...&type=recovery
+    const hash = window.location.hash
+    if (hash && hash.includes('access_token')) {
+      const params = new URLSearchParams(hash.replace('#', ''))
+      const accessToken = params.get('access_token')
+      const refreshToken = params.get('refresh_token')
+
+      if (accessToken) {
+        supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+          .then(({ error }) => {
+            if (error) {
+              setAlerta('Link inválido ou expirado!')
+            } else {
+              setPronto(true)
+            }
+          })
+      }
+    } else {
+      // Tenta pegar a sessão existente (caso já esteja logado)
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) setPronto(true)
+        else setAlerta('Link inválido ou expirado!')
+      })
+    }
+  }, [])
 
   async function handleSalvar() {
     if (!senha || !confirmar) { setAlerta('Preencha todos os campos!'); return }
@@ -70,6 +99,22 @@ export default function NovaSenhaPage() {
     )
   }
 
+  if (!pronto) {
+    return (
+      <div className="app-shell">
+        <Header hideLogout />
+        <div className="page-content">
+          <div className="card" style={{ maxWidth: 420, textAlign: 'center' }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
+            <p style={{ color: 'var(--branco)', fontSize: 14 }}>Verificando link...</p>
+          </div>
+        </div>
+        <Footer />
+        {alerta && <AlertToast message={alerta} onClose={() => navigate('/login')} />}
+      </div>
+    )
+  }
+
   return (
     <div className="app-shell">
       <Header hideLogout />
@@ -78,7 +123,6 @@ export default function NovaSenhaPage() {
         <div className="card" style={{ maxWidth: 420 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-            {/* Nova senha */}
             <div className="input-group">
               <div style={{ position: 'relative', width: '100%' }}>
                 <input className="input-field" type={mostrar ? 'text' : 'password'}
@@ -95,7 +139,6 @@ export default function NovaSenhaPage() {
               <span className="input-hint">Mín. 8 caracteres, maiúscula, minúscula, número e caractere especial</span>
             </div>
 
-            {/* Confirmar senha */}
             <div className="input-group">
               <div style={{ position: 'relative', width: '100%' }}>
                 <input className="input-field" type={mostrar2 ? 'text' : 'password'}
