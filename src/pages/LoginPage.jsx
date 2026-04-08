@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
-import { AlertToast } from '../components/Modals'
+import { AlertToast, ConfirmModal } from '../components/Modals'
 
 function IconeOlho({ aberto }) {
   return aberto ? (
@@ -22,24 +22,27 @@ function IconeOlho({ aberto }) {
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const { login } = useApp()
+  const { login, recuperarSenha } = useApp()
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [mostrarSenha, setMostrarSenha] = useState(false)
   const [alerta, setAlerta] = useState('')
+  const [showEsqueci, setShowEsqueci] = useState(false)
+  const [emailRecuperar, setEmailRecuperar] = useState('')
+  const [emailEnviado, setEmailEnviado] = useState(false)
 
   async function handleEntrar() {
     if (!email.trim() || !senha.trim()) {
       setAlerta('Preencha todos os campos!')
       return
     }
-
     const result = await login(email.trim(), senha.trim())
-
     if (result === 'admin') {
       navigate('/admin')
     } else if (result === 'user') {
       navigate('/home')
+    } else if (result === 'unconfirmed') {
+      setAlerta('Confirme seu e-mail antes de entrar!')
     } else {
       setAlerta('Dados não conferem!')
     }
@@ -47,6 +50,19 @@ export default function LoginPage() {
 
   function handleKeyDown(e) {
     if (e.key === 'Enter') handleEntrar()
+  }
+
+  async function handleRecuperarSenha() {
+    if (!emailRecuperar.trim()) {
+      setAlerta('Digite seu e-mail!')
+      return
+    }
+    const ok = await recuperarSenha(emailRecuperar.trim())
+    if (ok) {
+      setEmailEnviado(true)
+    } else {
+      setAlerta('Erro ao enviar e-mail. Tente novamente!')
+    }
   }
 
   return (
@@ -58,8 +74,6 @@ export default function LoginPage() {
 
         <div className="card">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-
-            {/* Email */}
             <div className="input-group">
               <input
                 className="input-field"
@@ -71,7 +85,6 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* Senha com olho SVG */}
             <div className="input-group">
               <div style={{ position: 'relative', width: '100%' }}>
                 <input
@@ -87,18 +100,11 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => setMostrarSenha(m => !m)}
                   style={{
-                    position: 'absolute',
-                    right: 12,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: 'rgba(254,254,253,0.6)',
-                    padding: 0,
-                    lineHeight: 1,
-                    display: 'flex',
-                    alignItems: 'center',
+                    position: 'absolute', right: 12, top: '50%',
+                    transform: 'translateY(-50%)', background: 'transparent',
+                    border: 'none', cursor: 'pointer',
+                    color: 'rgba(254,254,253,0.6)', padding: 0,
+                    lineHeight: 1, display: 'flex', alignItems: 'center',
                   }}
                 >
                   <IconeOlho aberto={mostrarSenha} />
@@ -110,24 +116,17 @@ export default function LoginPage() {
               Entrar
             </button>
 
-            <button
-              className="btn btn-gold"
-              onClick={() => navigate('/cadastro')}
-            >
+            <button className="btn btn-gold" onClick={() => navigate('/cadastro')}>
               Cadastrar
             </button>
 
             <button
               style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--branco)',
-                textDecoration: 'underline',
-                cursor: 'pointer',
-                fontSize: 14,
-                marginTop: 4,
+                background: 'transparent', border: 'none',
+                color: 'var(--branco)', textDecoration: 'underline',
+                cursor: 'pointer', fontSize: 14, marginTop: 4,
               }}
-              onClick={() => setAlerta('Funcionalidade disponível em breve!')}
+              onClick={() => setShowEsqueci(true)}
             >
               Esqueci a senha
             </button>
@@ -138,6 +137,47 @@ export default function LoginPage() {
       <Footer />
 
       {alerta && <AlertToast message={alerta} onClose={() => setAlerta('')} />}
+
+      {/* Modal esqueci a senha */}
+      {showEsqueci && (
+        <div className="modal-overlay" onClick={() => { setShowEsqueci(false); setEmailEnviado(false); setEmailRecuperar('') }}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
+            {emailEnviado ? (
+              <>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>📧</div>
+                <p className="modal-title">E-mail enviado!</p>
+                <p className="modal-text">
+                  Verifique sua caixa de entrada e clique no link para redefinir sua senha.
+                </p>
+                <button className="btn btn-gold" style={{ fontSize: 13 }} onClick={() => { setShowEsqueci(false); setEmailEnviado(false) }}>
+                  Fechar
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="modal-title">Recuperar Senha</p>
+                <p className="modal-text">Digite seu e-mail cadastrado:</p>
+                <input
+                  className="input-field"
+                  type="email"
+                  placeholder="E-mail"
+                  value={emailRecuperar}
+                  onChange={e => setEmailRecuperar(e.target.value)}
+                  style={{ marginBottom: 16 }}
+                />
+                <div className="modal-actions">
+                  <button className="btn btn-green" style={{ fontSize: 13, padding: '10px 20px' }} onClick={handleRecuperarSenha}>
+                    Enviar
+                  </button>
+                  <button className="btn btn-ghost" style={{ fontSize: 13, padding: '10px 20px' }} onClick={() => setShowEsqueci(false)}>
+                    Voltar
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

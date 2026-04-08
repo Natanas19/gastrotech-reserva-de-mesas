@@ -6,17 +6,107 @@ const AppContext = createContext(null)
 const HORARIOS = ['10h às 11h', '11h às 12h', '12h às 13h', '13h às 14h']
 
 export function AppProvider({ children }) {
-  const [usuarioLogado, setUsuarioLogado] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('gt_logado')) || null } catch { return null }
-  })
-
+  const [usuarioLogado, setUsuarioLogado] = useState(null)
+  const [perfil, setPerfil] = useState(null)
   const [reservas, setReservas] = useState([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
 
+  // ---- Escuta mudanças de sessão do Supabase Auth ----
   useEffect(() => {
-    localStorage.setItem('gt_logado', JSON.stringify(usuarioLogado))
-  }, [usuarioLogado])
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUsuarioLogado(session?.user ?? null)
+      if (session?.user) carregarPerfil(session.user.id)
+      setLoading(false)
+    })
 
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUsuarioLogado(session?.user ?? null)
+      if (session?.user) carregarPerfil(session.user.id)
+      else { setPerfil(null); setReservas([]) }
+    })
+
+    return () => listener.subscription.unsubscribe()
+  }, [])
+
+  async function carregarPerfil(userId) {
+    // Admin não tem perfil na tabela
+    const { data } = await supabase
+      .from('perfis')
+      .select('*')
+      .eq('id', userId)
+      .single()
+    if (data) setPerfil(data)
+  }
+
+  // ---- Auth ----
+  async function login(email, senha) {
+    // Admin hardcoded
+    if (email === 'admin' && senha === '0000') {
+      setUsuarioLogado({ email: 'admin', isAdmin: true, id: 'admin' })
+      setPerfil({ nome: 'Admin', email: 'admin' })
+      return 'admin'
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.toLowerCase().trim(),
+      password: senha.trim(),
+    })
+
+    if (error) {
+      if (error.message.includes('Email not confirmed')) return 'unconfirmed'
+      return null
+    }
+
+    return 'user'
+  }
+
+  async function logout() {
+    if (usuarioLogado?.isAdmin) {
+      setUsuarioLogado(null)
+      setPerfil(null)
+      setReservas([])
+      return
+    }
+    await supabase.auth.signOut()
+  }
+
+  async function cadastrar(dados) {
+    // Checar CPF duplicado
+    const { data: cpfExiste } = await supabase
+      .from('perfis')
+      .select('id')
+      .eq('cpf', dados.cpf)
+      .single()
+    if (cpfExiste) return 'cpf'
+
+    // Criar usuário no Supabase Auth
+    const { data, error } = await supabase.auth.signUp({
+      email: dados.email.toLowerCase().trim(),
+      password: dados.senha,
+    })
+
+    if (error) {
+      if (error.message.includes('already registered')) return 'email'
+      return null
+    }
+
+    // Salvar perfil na tabela perfis
+    const { error: perfilError } = await supabase
+      .from('perfis')
+      .insert([{
+        id: data.user.id,
+        nome: dados.nome,
+        cpf: dados.cpf,
+        telefone: dados.telefone,
+        email: dados.email.toLowerCase().trim(),
+      }])
+
+    if (perfilError) return null
+
+    return 'confirmar_email'
+  }
+
+  // ---- Reservas ----
   useEffect(() => {
     if (usuarioLogado && !usuarioLogado.isAdmin) {
       carregarMinhasReservas()
@@ -24,67 +114,6 @@ export function AppProvider({ children }) {
       carregarTodasReservas()
     }
   }, [usuarioLogado])
-
-  async function login(email, senha) {
-    if (email === 'admin' && senha === '0000') {
-      setUsuarioLogado({ nome: 'Admin', email: 'admin', isAdmin: true })
-      return 'admin'
-    }
-
-    const { data, error } = await supabase
-      .from('usuarios')
-      .select('*')
-      .eq('email', email.toLowerCase().trim())
-      .eq('senha', senha.trim())
-
-    console.log('data:', data)
-    console.log('error:', error)
-
-    if (error || !data || data.length === 0) return null
-
-    setUsuarioLogado(data[0])
-    return 'user'
-  }
-
-  function logout() {
-    setUsuarioLogado(null)
-    setReservas([])
-  }
-
-  async function cadastrar(dados) {
-    const { data: emailExiste } = await supabase
-      .from('usuarios')
-      .select('id')
-      .eq('email', dados.email.toLowerCase())
-      .single()
-
-    if (emailExiste) return 'email'
-
-    const { data: cpfExiste } = await supabase
-      .from('usuarios')
-      .select('id')
-      .eq('cpf', dados.cpf)
-      .single()
-
-    if (cpfExiste) return 'cpf'
-
-    const { data, error } = await supabase
-      .from('usuarios')
-      .insert([{
-        nome: dados.nome,
-        cpf: dados.cpf,
-        telefone: dados.telefone,
-        email: dados.email.toLowerCase(),
-        senha: dados.senha,
-      }])
-      .select()
-      .single()
-
-    if (error) return null
-
-    setUsuarioLogado(data)
-    return 'ok'
-  }
 
   async function carregarMinhasReservas() {
     if (!usuarioLogado) return
@@ -94,7 +123,6 @@ export function AppProvider({ children }) {
       .select('*')
       .eq('email', usuarioLogado.email)
       .order('created_at', { ascending: false })
-
     if (!error && data) setReservas(data)
     setLoading(false)
   }
@@ -105,7 +133,6 @@ export function AppProvider({ children }) {
       .from('reservas')
       .select('*')
       .order('created_at', { ascending: false })
-
     if (!error && data) setReservas(data)
     setLoading(false)
   }
@@ -116,20 +143,16 @@ export function AppProvider({ children }) {
       .select('mesa_idx')
       .eq('data', data)
       .eq('horario', horario)
-
     if (error || !result) return []
     return result.map(r => r.mesa_idx)
   }
 
   async function criarReserva(dados) {
-    const usuario = usuarioLogado
     const codigo = 'GT-' + Math.floor(100000 + Math.random() * 900000)
-
     const nova = {
-      nome: usuario.nome,
-      email: usuario.email,
-      cpf: usuario.cpf || '',
-      telefone: usuario.telefone || '',
+      nome: perfil?.nome || usuarioLogado.email,
+      email: usuarioLogado.email,
+      telefone: perfil?.telefone || '',
       mesa: dados.mesaIdx + 1,
       mesa_idx: dados.mesaIdx,
       horario: dados.horario,
@@ -145,7 +168,6 @@ export function AppProvider({ children }) {
       .single()
 
     if (error) return null
-
     setReservas(prev => [data, ...prev])
     return data
   }
@@ -158,26 +180,13 @@ export function AppProvider({ children }) {
       mesa_idx: dadosNovos.mesaIdx,
       qtd_lugares: dadosNovos.qtdLugares,
     }
-
-    const { error } = await supabase
-      .from('reservas')
-      .update(update)
-      .eq('id', id)
-
-    if (!error) {
-      setReservas(prev => prev.map(r => r.id === id ? { ...r, ...update } : r))
-    }
+    const { error } = await supabase.from('reservas').update(update).eq('id', id)
+    if (!error) setReservas(prev => prev.map(r => r.id === id ? { ...r, ...update } : r))
   }
 
   async function cancelarReserva(id) {
-    const { error } = await supabase
-      .from('reservas')
-      .delete()
-      .eq('id', id)
-
-    if (!error) {
-      setReservas(prev => prev.filter(r => r.id !== id))
-    }
+    const { error } = await supabase.from('reservas').delete().eq('id', id)
+    if (!error) setReservas(prev => prev.filter(r => r.id !== id))
   }
 
   function getMinhasReservas() {
@@ -185,10 +194,17 @@ export function AppProvider({ children }) {
     return reservas.filter(r => r.email === usuarioLogado.email)
   }
 
+  async function recuperarSenha(email) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/nova-senha',
+    })
+    return !error
+  }
+
   return (
     <AppContext.Provider value={{
-      usuarioLogado, loading,
-      login, logout, cadastrar,
+      usuarioLogado, perfil, loading,
+      login, logout, cadastrar, recuperarSenha,
       reservas, getMesasOcupadas, criarReserva, editarReserva, cancelarReserva, getMinhasReservas,
       carregarTodasReservas, carregarMinhasReservas,
       HORARIOS,

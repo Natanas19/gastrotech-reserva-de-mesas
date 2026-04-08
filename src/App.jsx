@@ -10,10 +10,11 @@ import ConfirmacaoPage from './pages/ConfirmacaoPage'
 import MinhasReservasPage from './pages/MinhasReservasPage'
 import EditarReservaPage from './pages/EditarReservaPage'
 import AdminPage from './pages/AdminPage'
+import NovaSenhaPage from './pages/NovaSenhaPage'
 
-// Protege rotas que precisam de login
 function PrivateRoute({ children, adminOnly = false }) {
-  const { usuarioLogado } = useApp()
+  const { usuarioLogado, loading } = useApp()
+  if (loading) return null
   if (!usuarioLogado) return <Navigate to="/login" replace />
   if (adminOnly && !usuarioLogado.isAdmin) return <Navigate to="/home" replace />
   if (!adminOnly && usuarioLogado.isAdmin) return <Navigate to="/admin" replace />
@@ -21,11 +22,11 @@ function PrivateRoute({ children, adminOnly = false }) {
 }
 
 function AppRoutes() {
-  const { usuarioLogado } = useApp()
+  const { usuarioLogado, loading } = useApp()
+  if (loading) return null
 
   return (
     <Routes>
-      {/* Redireciona raiz conforme estado de login */}
       <Route path="/" element={
         usuarioLogado
           ? usuarioLogado.isAdmin
@@ -36,27 +37,15 @@ function AppRoutes() {
 
       <Route path="/login" element={<LoginPage />} />
       <Route path="/cadastro" element={<CadastroPage />} />
+      <Route path="/nova-senha" element={<NovaSenhaPage />} />
 
-      <Route path="/home" element={
-        <PrivateRoute><HomePage /></PrivateRoute>
-      } />
-      <Route path="/reserva" element={
-        <PrivateRoute><ReservaPage /></PrivateRoute>
-      } />
-      <Route path="/confirmacao" element={
-        <PrivateRoute><ConfirmacaoPage /></PrivateRoute>
-      } />
-      <Route path="/minhas-reservas" element={
-        <PrivateRoute><MinhasReservasPage /></PrivateRoute>
-      } />
-      <Route path="/editar-reserva" element={
-        <PrivateRoute><EditarReservaPage /></PrivateRoute>
-      } />
-      <Route path="/admin" element={
-        <PrivateRoute adminOnly><AdminPage /></PrivateRoute>
-      } />
+      <Route path="/home" element={<PrivateRoute><HomePage /></PrivateRoute>} />
+      <Route path="/reserva" element={<PrivateRoute><ReservaPage /></PrivateRoute>} />
+      <Route path="/confirmacao" element={<PrivateRoute><ConfirmacaoPage /></PrivateRoute>} />
+      <Route path="/minhas-reservas" element={<PrivateRoute><MinhasReservasPage /></PrivateRoute>} />
+      <Route path="/editar-reserva" element={<PrivateRoute><EditarReservaPage /></PrivateRoute>} />
+      <Route path="/admin" element={<PrivateRoute adminOnly><AdminPage /></PrivateRoute>} />
 
-      {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
