@@ -11,6 +11,7 @@ export function AppProvider({ children }) {
   const [reservas, setReservas] = useState([])
   const [loading, setLoading] = useState(true)
 
+  // ---- Escuta mudanças de sessão do Supabase Auth ----
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUsuarioLogado(session?.user ?? null)
@@ -28,15 +29,18 @@ export function AppProvider({ children }) {
   }, [])
 
   async function carregarPerfil(userId) {
+    // Admin não tem perfil na tabela
     const { data } = await supabase
       .from('perfis')
       .select('*')
       .eq('id', userId)
-      .maybeSingle()
+      .single()
     if (data) setPerfil(data)
   }
 
+  // ---- Auth ----
   async function login(email, senha) {
+    // Admin hardcoded
     if (email === 'admin' && senha === '0000') {
       setUsuarioLogado({ email: 'admin', isAdmin: true, id: 'admin' })
       setPerfil({ nome: 'Admin', email: 'admin' })
@@ -72,7 +76,7 @@ export function AppProvider({ children }) {
       .from('perfis')
       .select('id')
       .eq('cpf', dados.cpf)
-      .maybeSingle()
+      .single()
     if (cpfExiste) return 'cpf'
 
     // Criar usuário no Supabase Auth
@@ -86,25 +90,23 @@ export function AppProvider({ children }) {
       return null
     }
 
-    // upsert evita erro 409 caso o perfil já exista por tentativa anterior
+    // Salvar perfil na tabela perfis
     const { error: perfilError } = await supabase
       .from('perfis')
-      .upsert([{
+      .insert([{
         id: data.user.id,
         nome: dados.nome,
         cpf: dados.cpf,
         telefone: dados.telefone,
         email: dados.email.toLowerCase().trim(),
-      }], { onConflict: 'id' })
+      }])
 
-    if (perfilError) {
-      console.log('erro perfil:', perfilError)
-      return null
-    }
+    if (perfilError) return null
 
     return 'confirmar_email'
   }
 
+  // ---- Reservas ----
   useEffect(() => {
     if (usuarioLogado && !usuarioLogado.isAdmin) {
       carregarMinhasReservas()
