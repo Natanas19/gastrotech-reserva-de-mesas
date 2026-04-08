@@ -129,16 +129,16 @@ export default function CadastroPage() {
     const { nome, cpf, telefone, email, senha } = form
     const result = await cadastrar({ nome, cpf, telefone, email, senha })
 
+    console.log('resultado cadastro:', result)
+
     if (result === 'email') { setAlerta('E-mail já cadastrado!'); setShowConfirm(false); return }
     if (result === 'cpf') { setAlerta('CPF já cadastrado!'); setShowConfirm(false); return }
     if (result === null) { setAlerta('Erro ao cadastrar. Tente novamente!'); setShowConfirm(false); return }
 
-    // Sucesso — mostrar tela de confirmação de e-mail
     setShowConfirm(false)
     setEmailEnviado(true)
   }
 
-  // ---- Tela de aguardando confirmação ----
   if (emailEnviado) {
     return (
       <div className="app-shell">

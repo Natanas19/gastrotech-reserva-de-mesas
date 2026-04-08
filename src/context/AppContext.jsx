@@ -11,7 +11,6 @@ export function AppProvider({ children }) {
   const [reservas, setReservas] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // ---- Escuta mudanças de sessão do Supabase Auth ----
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUsuarioLogado(session?.user ?? null)
@@ -29,18 +28,15 @@ export function AppProvider({ children }) {
   }, [])
 
   async function carregarPerfil(userId) {
-    // Admin não tem perfil na tabela
     const { data } = await supabase
       .from('perfis')
       .select('*')
       .eq('id', userId)
-      .single()
+      .maybeSingle()
     if (data) setPerfil(data)
   }
 
-  // ---- Auth ----
   async function login(email, senha) {
-    // Admin hardcoded
     if (email === 'admin' && senha === '0000') {
       setUsuarioLogado({ email: 'admin', isAdmin: true, id: 'admin' })
       setPerfil({ nome: 'Admin', email: 'admin' })
@@ -71,12 +67,12 @@ export function AppProvider({ children }) {
   }
 
   async function cadastrar(dados) {
-    // Checar CPF duplicado
+    // Checar CPF duplicado — maybeSingle() retorna null se não encontrar, sem erro
     const { data: cpfExiste } = await supabase
       .from('perfis')
       .select('id')
       .eq('cpf', dados.cpf)
-      .single()
+      .maybeSingle()
     if (cpfExiste) return 'cpf'
 
     // Criar usuário no Supabase Auth
@@ -101,12 +97,14 @@ export function AppProvider({ children }) {
         email: dados.email.toLowerCase().trim(),
       }])
 
-    if (perfilError) return null
+    if (perfilError) {
+      console.log('erro perfil:', perfilError)
+      return null
+    }
 
     return 'confirmar_email'
   }
 
-  // ---- Reservas ----
   useEffect(() => {
     if (usuarioLogado && !usuarioLogado.isAdmin) {
       carregarMinhasReservas()
